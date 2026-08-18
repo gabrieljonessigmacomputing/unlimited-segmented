@@ -16,12 +16,13 @@ body {
 
 .usc-root {
   /* Scale pills to the plugin element's own box (it can be a tiny tile or a
-     full-width row in the workbook), not the page viewport. High ceilings
-     below so growth keeps going as the element gets bigger instead of
-     plateauing at a "reasonable" desktop size. */
+     full-width row in the workbook), not the page viewport. Low cqw
+     coefficients below keep the DEFAULT size small at typical element
+     widths; the high ceilings still let pills keep growing for genuinely
+     large/wide elements instead of plateauing early. */
   container-type: inline-size;
   container-name: usc;
-  padding: clamp(4px, 2cqw, 40px);
+  padding: clamp(4px, 0.8cqw, 40px);
 }
 
 .usc-message {
@@ -32,7 +33,7 @@ body {
 
 .usc-row {
   display: flex;
-  gap: clamp(4px, 1.6cqw, 32px);
+  gap: clamp(4px, 0.6cqw, 32px);
 }
 
 .usc-row--wrap {
@@ -51,8 +52,8 @@ body {
   background: #fff;
   color: #374151;
   border-radius: 999px;
-  padding: clamp(3px, 1.8cqw, 36px) clamp(6px, 4cqw, 72px);
-  font-size: clamp(11px, 4.4cqw, 88px);
+  padding: clamp(3px, 0.6cqw, 36px) clamp(6px, 1.4cqw, 72px);
+  font-size: clamp(10px, 1.4cqw, 88px);
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
