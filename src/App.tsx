@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { client, useConfig, useElementData, useVariable } from "@sigmacomputing/plugin";
 
 // NOTE: don't restrict the Target Control field's allowedTypes by multiSelect —
@@ -76,7 +76,24 @@ export default function App() {
     return deduped;
   }, [data, optionColumn, sortOrder]);
 
-  const selected = useMemo(() => toStringSet(value), [value]);
+  // The plugin owns pill highlighting locally rather than deriving it fresh from
+  // the bound control's echoed value on every render. A control that can only
+  // hold one value (single-select) would otherwise immediately "forget" every
+  // pill but the most recently clicked one, even in multi-select mode — the
+  // plugin's own selection state is the thing that should persist a click,
+  // independent of what the workbook control is actually capable of storing.
+  // Seed it exactly once per control binding, as soon as that control's current
+  // value is known; after that, only user clicks change it.
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const seededControlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const controlKey = config.control ?? null;
+    if (seededControlRef.current === controlKey) return;
+    if (value === undefined) return;
+    seededControlRef.current = controlKey;
+    setSelected(toStringSet(value));
+  }, [config.control, value]);
 
   if (!config.source) {
     return <div className="usc-message">Select an options source.</div>;
@@ -91,7 +108,13 @@ export default function App() {
     return <div className="usc-message">No options found in the selected column.</div>;
   }
 
-  const commit = (next: Set<string>) => {
+  // Update the plugin's own highlighting immediately (this is what the user
+  // sees and clicks against) and separately, best-effort, push the new
+  // selection out to the bound control. Whether the workbook actually filters
+  // on all of it depends on that control's own capacity (Selection Mode), but
+  // the plugin's pills always reflect exactly what was clicked either way.
+  const applySelection = (next: Set<string>) => {
+    setSelected(next);
     if (multiSelect) {
       // The SDK's underlying setVariable(configId, ...values) is variadic —
       // list-typed control variables are written as spread positional values,
@@ -105,7 +128,7 @@ export default function App() {
   const pick = (opt: Primitive) => {
     const key = String(opt);
     if (!multiSelect) {
-      commit(selected.has(key) && showAll ? new Set() : new Set([key]));
+      applySelection(selected.has(key) && showAll ? new Set() : new Set([key]));
       return;
     }
     const next = new Set(selected);
@@ -114,10 +137,10 @@ export default function App() {
     } else {
       next.add(key);
     }
-    commit(next);
+    applySelection(next);
   };
 
-  const clear = () => commit(new Set());
+  const clear = () => applySelection(new Set());
 
   return (
     <div className="usc-root" style={{ "--usc-accent": accent } as CSSProperties}>
