@@ -1,22 +1,42 @@
 import { useEffect, useMemo, type CSSProperties } from "react";
-import { client, useConfig, useElementData, useVariable } from "@sigmacomputing/plugin";
+import {
+  client,
+  useConfig,
+  useElementData,
+  useVariable,
+  type ControlType,
+} from "@sigmacomputing/plugin";
 
-client.config.configureEditorPanel([
-  { name: "source", type: "element", label: "Options Source" },
+// The bound control must be able to hold what we write to it: a single scalar in
+// single-select mode, a list-typed variable (text-list/number-list/date-list) in
+// multi-select mode. Reconfigure the editor panel's allowedTypes when the toggle
+// flips so the picker only offers control types that actually work.
+const SCALAR_CONTROL_TYPES = ["text", "number", "date"] as ControlType[];
+const LIST_CONTROL_TYPES = ["text-list", "number-list", "date-list"] as ControlType[];
+
+const buildEditorPanelConfig = (multiSelect: boolean) => [
+  { name: "source", type: "element" as const, label: "Options Source" },
   {
     name: "optionColumn",
-    type: "column",
+    type: "column" as const,
     source: "source",
     allowMultiple: false,
     label: "Option Column",
   },
-  { name: "control", type: "variable", label: "Target Control" },
-  { name: "multiSelect", type: "toggle", label: "Multi-select", defaultValue: false },
-  { name: "wrap", type: "toggle", label: "Wrap to rows", defaultValue: true },
-  { name: "showAll", type: "toggle", label: 'Show "All" clear pill', defaultValue: false },
-  { name: "accent", type: "color", label: "Accent Color" },
-  { name: "sortOrder", type: "dropdown", values: ["asc", "desc"], label: "Sort Order" },
-]);
+  {
+    name: "control",
+    type: "variable" as const,
+    label: "Target Control",
+    allowedTypes: multiSelect ? LIST_CONTROL_TYPES : SCALAR_CONTROL_TYPES,
+  },
+  { name: "multiSelect", type: "toggle" as const, label: "Multi-select", defaultValue: false },
+  { name: "wrap", type: "toggle" as const, label: "Wrap to rows", defaultValue: true },
+  { name: "showAll", type: "toggle" as const, label: 'Show "All" clear pill', defaultValue: false },
+  { name: "accent", type: "color" as const, label: "Accent Color" },
+  { name: "sortOrder", type: "dropdown" as const, values: ["asc", "desc"], label: "Sort Order" },
+];
+
+client.config.configureEditorPanel(buildEditorPanelConfig(false));
 
 type Primitive = string | number;
 
@@ -59,6 +79,10 @@ export default function App() {
     client.config.setLoadingState(!ready);
   }, [ready]);
 
+  useEffect(() => {
+    client.config.configureEditorPanel(buildEditorPanelConfig(multiSelect));
+  }, [multiSelect]);
+
   const options = useMemo<Primitive[]>(() => {
     if (!optionColumn) return [];
     const raw = (data?.[optionColumn] ?? []) as Primitive[];
@@ -87,7 +111,10 @@ export default function App() {
 
   const commit = (next: Set<string>) => {
     if (multiSelect) {
-      void setValue([...next]);
+      // The SDK's underlying setVariable(configId, ...values) is variadic —
+      // list-typed control variables are written as spread positional values,
+      // not a single array argument (mirrors the documented range-variable pattern).
+      void setValue(...next);
     } else {
       void setValue([...next][0] ?? "");
     }
