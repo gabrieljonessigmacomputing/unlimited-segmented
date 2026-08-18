@@ -1,5 +1,5 @@
 name: Deploy to Pages
-on: { push: { branches: [main] } }
+on: { push: { branches: [master] } }
 permissions: { contents: read, pages: write, id-token: write }
 jobs:
   build:
