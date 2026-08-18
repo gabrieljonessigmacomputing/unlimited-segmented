@@ -22,9 +22,46 @@ client.config.configureEditorPanel([
   { name: "showAll", type: "toggle", label: 'Show "All" clear pill', defaultValue: false },
   { name: "accent", type: "color", label: "Accent Color" },
   { name: "sortOrder", type: "dropdown", values: ["asc", "desc"], label: "Sort Order" },
+  {
+    name: "shape",
+    type: "dropdown",
+    values: ["pill", "segmented"],
+    defaultValue: "pill",
+    label: "Shape",
+  },
+  {
+    name: "horizontalAlign",
+    type: "dropdown",
+    values: ["left", "center", "right"],
+    defaultValue: "left",
+    label: "Horizontal Align",
+  },
+  {
+    name: "verticalAlign",
+    type: "dropdown",
+    values: ["top", "center", "bottom"],
+    defaultValue: "top",
+    label: "Vertical Align",
+  },
+  { name: "label", type: "text", label: "Label", placeholder: "e.g. Vertical" },
+  { name: "showLabel", type: "toggle", label: "Show Label", defaultValue: true },
 ]);
 
 type Primitive = string | number;
+
+const JUSTIFY_MAP: Record<string, "flex-start" | "center" | "flex-end"> = {
+  left: "flex-start",
+  top: "flex-start",
+  center: "center",
+  right: "flex-end",
+  bottom: "flex-end",
+};
+
+const TEXT_ALIGN_MAP: Record<string, "left" | "center" | "right"> = {
+  left: "left",
+  center: "center",
+  right: "right",
+};
 
 // Sigma variable values sometimes arrive wrapped (e.g. { value: ... }) rather than raw.
 function unwrapVariable(raw: unknown): unknown {
@@ -45,6 +82,25 @@ function toStringSet(value: unknown): Set<string> {
   return new Set([String(unwrapped)]);
 }
 
+type PillItem = {
+  key: string;
+  label: string;
+  pressed: boolean;
+  onClick: () => void;
+  isClear?: boolean;
+};
+
+function pillClassName(shape: string, item: PillItem, index: number, total: number): string {
+  const classes = ["usc-pill"];
+  if (item.isClear) classes.push("usc-pill--clear");
+  if (shape === "segmented") {
+    classes.push("usc-pill--segmented");
+    if (index === 0) classes.push("usc-pill--seg-first");
+    if (index === total - 1) classes.push("usc-pill--seg-last");
+  }
+  return classes.join(" ");
+}
+
 export default function App() {
   const config = useConfig();
   const optionColumn = Array.isArray(config.optionColumn)
@@ -58,6 +114,11 @@ export default function App() {
   const showAll = Boolean(config.showAll);
   const accent = (config.accent as string) || "#7AC142";
   const sortOrder = config.sortOrder === "desc" ? "desc" : "asc";
+  const shape = config.shape === "segmented" ? "segmented" : "pill";
+  const horizontalAlign = config.horizontalAlign in JUSTIFY_MAP ? config.horizontalAlign : "left";
+  const verticalAlign = config.verticalAlign in JUSTIFY_MAP ? config.verticalAlign : "top";
+  const label = (config.label as string) || "";
+  const showLabel = config.showLabel ?? true;
 
   const ready = Boolean(config.source && optionColumn && config.control);
 
@@ -142,33 +203,48 @@ export default function App() {
 
   const clear = () => applySelection(new Set());
 
+  const pillItems: PillItem[] = [
+    ...(showAll
+      ? [{ key: "__all__", label: "All", pressed: selected.size === 0, onClick: clear, isClear: true }]
+      : []),
+    ...options.map((opt) => {
+      const key = String(opt);
+      return { key, label: key, pressed: selected.has(key), onClick: () => pick(opt) };
+    }),
+  ];
+
   return (
-    <div className="usc-root" style={{ "--usc-accent": accent } as CSSProperties}>
-      <div className={`usc-row ${wrap ? "usc-row--wrap" : "usc-row--scroll"}`}>
-        {showAll && (
+    <div
+      className="usc-root"
+      style={
+        {
+          "--usc-accent": accent,
+          justifyContent: JUSTIFY_MAP[verticalAlign],
+        } as CSSProperties
+      }
+    >
+      {showLabel && label && (
+        <div className="usc-label" style={{ textAlign: TEXT_ALIGN_MAP[horizontalAlign] }}>
+          {label}
+        </div>
+      )}
+      <div
+        className={`usc-row ${wrap ? "usc-row--wrap" : "usc-row--scroll"} ${
+          shape === "segmented" ? "usc-row--segmented" : "usc-row--pill"
+        }`}
+        style={{ justifyContent: JUSTIFY_MAP[horizontalAlign] }}
+      >
+        {pillItems.map((item, index) => (
           <button
+            key={item.key}
             type="button"
-            className="usc-pill usc-pill--clear"
-            aria-pressed={selected.size === 0}
-            onClick={clear}
+            className={pillClassName(shape, item, index, pillItems.length)}
+            aria-pressed={item.pressed}
+            onClick={item.onClick}
           >
-            All
+            {item.label}
           </button>
-        )}
-        {options.map((opt) => {
-          const key = String(opt);
-          return (
-            <button
-              key={key}
-              type="button"
-              className="usc-pill"
-              aria-pressed={selected.has(key)}
-              onClick={() => pick(opt)}
-            >
-              {key}
-            </button>
-          );
-        })}
+        ))}
       </div>
     </div>
   );

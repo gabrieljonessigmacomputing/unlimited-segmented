@@ -2,6 +2,12 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family:
@@ -16,13 +22,25 @@ body {
 
 .usc-root {
   /* Scale pills to the plugin element's own box (it can be a tiny tile or a
-     full-width row in the workbook), not the page viewport. Low cqw
-     coefficients below keep the DEFAULT size small at typical element
+     full-width row in the workbook), not the page viewport. Floors below are
+     tuned to sit flush with Sigma's native control height at typical element
      widths; the high ceilings still let pills keep growing for genuinely
-     large/wide elements instead of plateauing early. */
+     large/wide elements instead of plateauing early. justify-content (set
+     inline) controls vertical placement when the element is taller than the
+     control needs to be. */
   container-type: inline-size;
   container-name: usc;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: clamp(4px, 0.8cqw, 40px);
+}
+
+.usc-label {
+  color: #1f2937;
+  font-size: clamp(11px, 0.9cqw, 20px);
+  font-weight: 600;
+  margin-bottom: clamp(2px, 0.3cqw, 10px);
 }
 
 .usc-message {
@@ -34,6 +52,7 @@ body {
 .usc-row {
   display: flex;
   gap: clamp(4px, 0.6cqw, 32px);
+  width: 100%;
 }
 
 .usc-row--wrap {
@@ -52,8 +71,8 @@ body {
   background: #fff;
   color: #374151;
   border-radius: 999px;
-  padding: clamp(1px, 0.28cqw, 22px) clamp(9px, 1.8cqw, 84px);
-  font-size: clamp(10px, 1.4cqw, 88px);
+  padding: clamp(6px, 0.3cqw, 30px) clamp(10px, 1.6cqw, 84px);
+  font-size: clamp(13px, 1cqw, 88px);
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
@@ -75,4 +94,33 @@ body {
 
 .usc-pill--clear {
   border-style: dashed;
+}
+
+/* Shape: segmented — a single connected strip (rounded end caps, square
+   joints, shared 1px borders) instead of isolated pill bubbles. */
+.usc-row--segmented {
+  gap: 0;
+}
+
+.usc-pill--segmented {
+  border-radius: 0;
+}
+
+.usc-pill--segmented:not(.usc-pill--seg-first) {
+  margin-left: -1px;
+}
+
+.usc-pill--seg-first {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.usc-pill--seg-last {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.usc-pill--segmented[aria-pressed="true"] {
+  position: relative;
+  z-index: 1;
 }
