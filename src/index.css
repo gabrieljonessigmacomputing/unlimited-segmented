@@ -52,7 +52,7 @@ body {
   background: #fff;
   color: #374151;
   border-radius: 999px;
-  padding: clamp(3px, 0.6cqw, 36px) clamp(6px, 1.4cqw, 72px);
+  padding: clamp(2px, 0.45cqw, 30px) clamp(9px, 1.8cqw, 84px);
   font-size: clamp(10px, 1.4cqw, 88px);
   line-height: 1.2;
   cursor: pointer;
