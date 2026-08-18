@@ -15,7 +15,11 @@ body {
 }
 
 .usc-root {
-  padding: 8px;
+  /* Scale pills to the plugin element's own box (it can be a tiny tile or a
+     full-width row in the workbook), not the page viewport. */
+  container-type: inline-size;
+  container-name: usc;
+  padding: clamp(4px, 1.5cqw, 8px);
 }
 
 .usc-message {
@@ -26,7 +30,7 @@ body {
 
 .usc-row {
   display: flex;
-  gap: 6px;
+  gap: clamp(4px, 1cqw, 6px);
 }
 
 .usc-row--wrap {
@@ -45,8 +49,8 @@ body {
   background: #fff;
   color: #374151;
   border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: clamp(3px, 1cqw, 8px) clamp(6px, 2.4cqw, 16px);
+  font-size: clamp(11px, 2.6cqw, 15px);
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
