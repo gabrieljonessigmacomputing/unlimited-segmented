@@ -1,42 +1,28 @@
 import { useEffect, useMemo, type CSSProperties } from "react";
-import {
-  client,
-  useConfig,
-  useElementData,
-  useVariable,
-  type ControlType,
-} from "@sigmacomputing/plugin";
+import { client, useConfig, useElementData, useVariable } from "@sigmacomputing/plugin";
 
-// The bound control must be able to hold what we write to it: a single scalar in
-// single-select mode, a list-typed variable (text-list/number-list/date-list) in
-// multi-select mode. Reconfigure the editor panel's allowedTypes when the toggle
-// flips so the picker only offers control types that actually work.
-const SCALAR_CONTROL_TYPES = ["text", "number", "date"] as ControlType[];
-const LIST_CONTROL_TYPES = ["text-list", "number-list", "date-list"] as ControlType[];
-
-const buildEditorPanelConfig = (multiSelect: boolean) => [
-  { name: "source", type: "element" as const, label: "Options Source" },
+// NOTE: don't restrict the Target Control field's allowedTypes by multiSelect —
+// it's unverified whether Sigma classifies a native multi-select list control as
+// 'text-list' to the plugin SDK, and an over-eager restriction can hide the very
+// control multi-select needs. Multi-select only works end-to-end when Target
+// Control is bound to a control whose Selection Mode is actually "Multiple";
+// a single-select control can only ever hold one value no matter what we send it.
+client.config.configureEditorPanel([
+  { name: "source", type: "element", label: "Options Source" },
   {
     name: "optionColumn",
-    type: "column" as const,
+    type: "column",
     source: "source",
     allowMultiple: false,
     label: "Option Column",
   },
-  {
-    name: "control",
-    type: "variable" as const,
-    label: "Target Control",
-    allowedTypes: multiSelect ? LIST_CONTROL_TYPES : SCALAR_CONTROL_TYPES,
-  },
-  { name: "multiSelect", type: "toggle" as const, label: "Multi-select", defaultValue: false },
-  { name: "wrap", type: "toggle" as const, label: "Wrap to rows", defaultValue: true },
-  { name: "showAll", type: "toggle" as const, label: 'Show "All" clear pill', defaultValue: false },
-  { name: "accent", type: "color" as const, label: "Accent Color" },
-  { name: "sortOrder", type: "dropdown" as const, values: ["asc", "desc"], label: "Sort Order" },
-];
-
-client.config.configureEditorPanel(buildEditorPanelConfig(false));
+  { name: "control", type: "variable", label: "Target Control" },
+  { name: "multiSelect", type: "toggle", label: "Multi-select", defaultValue: false },
+  { name: "wrap", type: "toggle", label: "Wrap to rows", defaultValue: true },
+  { name: "showAll", type: "toggle", label: 'Show "All" clear pill', defaultValue: false },
+  { name: "accent", type: "color", label: "Accent Color" },
+  { name: "sortOrder", type: "dropdown", values: ["asc", "desc"], label: "Sort Order" },
+]);
 
 type Primitive = string | number;
 
@@ -78,10 +64,6 @@ export default function App() {
   useEffect(() => {
     client.config.setLoadingState(!ready);
   }, [ready]);
-
-  useEffect(() => {
-    client.config.configureEditorPanel(buildEditorPanelConfig(multiSelect));
-  }, [multiSelect]);
 
   const options = useMemo<Primitive[]>(() => {
     if (!optionColumn) return [];
